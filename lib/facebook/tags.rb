@@ -12,7 +12,7 @@ module Facebook
     }
     tag 'facebook' do |tag|
       path = require_attr!('get', tag.attr)
-      client = RestGraph.new
+      client = rest_graph_client
       begin
         response = client.get(path)
       rescue => e
@@ -100,6 +100,23 @@ module Facebook
     def require_attr!(key, attrs)
       raise TagError, "'#{key}' attribute is required." unless attrs[key]
       attrs[key]
+    end
+
+
+    def rest_graph_client
+      opts = {
+        :app_id => Radiant::Config['facebook.app_id'],
+        :secret => Radiant::Config['facebook.secret']
+      }
+      if opts[:app_id] && opts[:secret]
+        base_url = "https://graph.facebook.com/oauth/"
+        query_params = "access_token?client_id=#{opts[:app_id]}&client_secret=#{opts[:secret]}&grant_type=client_credentials"
+        c = HTTPClient.new
+        resp = c.get_content(base_url + query_params)
+        opts[:access_token] = resp.gsub(/access_token=/, '')
+      end
+      rg = RestGraph.new(opts)
+      rg
     end
 
   end
